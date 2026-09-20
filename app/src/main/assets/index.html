@@ -915,6 +915,36 @@ let games = [];
 
 let selectedGame = null;
 
+function saveSelectedGame(game) {
+    if (!game) {
+        localStorage.removeItem("selectedGame");
+        return;
+    }
+    localStorage.setItem("selectedGame", JSON.stringify(game));
+}
+
+function loadSelectedGame() {
+    const raw = localStorage.getItem("selectedGame");
+    if (!raw) return null;
+    try {
+        return JSON.parse(raw);
+    } catch (e) {
+        return null;
+    }
+}
+
+window.restoreSelectedGame = function(uri, title, folderUri) {
+    if (!uri || !folderUri) return;
+    selectedGame = {
+        uri,
+        name: title || "Game",
+        title: title || "Game",
+        folderUri
+    };
+    renderGameSheet(selectedGame);
+    saveSelectedGame(selectedGame);
+};
+
 let pendingFile = null;
 
 let pendingImage = null;
@@ -1041,20 +1071,14 @@ function saveLibrary() {
 ========================= */
 
 function openFilePicker() {
-
-    if (
-        typeof Android !== "undefined" &&
-        Android.pickGameFolder
-    ) {
-        Android.pickGameFolder();
-        return;
+    if (window.Android && typeof Android.openFolderPicker === 'function') {
+        Android.openFolderPicker();
+    } else {
+        const input = document.getElementById('fileInput');
+        if (input) input.click();
     }
-
-    document
-        .getElementById("fileInput")
-        .click();
-
 }
+
 
 
 /* =========================
@@ -1529,6 +1553,7 @@ function renderGames() {
 function openGameSheet(game) {
 
     selectedGame = game;
+    saveSelectedGame(game);
 
 
     document
@@ -1560,6 +1585,7 @@ function openGameSheet(game) {
 function closeSheet() {
 
     selectedGame = null;
+    saveSelectedGame(null);
 
 
     document
@@ -1578,26 +1604,33 @@ function closeSheet() {
 
 function launchGame() {
     if (!selectedGame) {
+        showToast("Chưa chọn game");
         return;
     }
 
-    if (
-        typeof Android === "undefined" ||
-        !Android.launchGame
-    ) {
+    if (!window.Android ||
+        typeof window.Android.launchGameFromUri !== "function") {
         showToast("Android runtime unavailable");
         return;
     }
 
-    showToast(
-        "Launching " +
-        selectedGame.name +
-        "..."
-    );
+    const uri = selectedGame.uri;
+    const title = selectedGame.name || "Game";
+    const folderUri = selectedGame.folderUri;
 
-    Android.launchGame(
-        selectedGame.folderPath || selectedGame.folderUri || selectedGame.uri
-    );
+    if (!uri) {
+        showToast("Không tìm thấy URI của data.win");
+        return;
+    }
+
+    if (!folderUri) {
+        showToast("Thiếu thư mục game. Hãy Add Game lại.");
+        return;
+    }
+
+    showToast("Launching " + title + "...");
+    closeSheet();
+    window.Android.launchGameFromUri(uri, title, folderUri);
 }
 
 /* =========================
@@ -1889,6 +1922,43 @@ loadLibrary();
 
 renderGames();
 
+function onFolderScanned(results) {
+    try {
+        if (typeof results === 'string') {
+            results = JSON.parse(results);
+        }
+        if (!Array.isArray(results)) {
+            results = [];
+        }
+
+        const scanned = results.map(game => ({
+            id: game.uri,
+            name: game.title || 'Game',
+            type: 'data.win',
+            uri: game.uri,
+            folderUri: game.folderUri,
+            path: game.uri,
+            size: game.size || 0,
+            dataWin: null
+        }));
+
+        games = scanned;
+        saveLibrary();
+        renderGames();
+
+        const scanning = document.getElementById('scanning');
+        if (scanning) scanning.classList.remove('show');
+
+        if (scanned.length === 0) {
+            showToast('Không tìm thấy data.win trong thư mục đã chọn');
+        } else {
+            showToast('Đã tìm thấy ' + scanned.length + ' game');
+        }
+    } catch (error) {
+        console.error('Folder scan failed:', error);
+        showToast('Không thể đọc thư mục game');
+    }
+}
 </script>
 
 <div id="toast"></div>

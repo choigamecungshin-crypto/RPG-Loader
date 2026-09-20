@@ -23,4 +23,8 @@ android {
     kotlinOptions {
         jvmTarget = '21'
     }
+
+    dependencies {
+    implementation 'androidx.documentfile:documentfile:1.0.1'
+    }
 }

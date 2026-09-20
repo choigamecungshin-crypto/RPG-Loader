@@ -57,53 +57,6 @@ public class MainActivity extends Activity {
         }
     }
 
-
-    private File directDataWinFromUri(String fileUriString) {
-        try {
-            Uri uri = Uri.parse(fileUriString);
-            String encodedId = uri.getLastPathSegment();
-            if (encodedId == null) {
-                return null;
-            }
-
-            String documentId = Uri.decode(encodedId);
-
-            if (!documentId.startsWith("primary:")) {
-                android.util.Log.e(
-                        "RPGLoader",
-                        "Unsupported storage volume: " + documentId
-                );
-                return null;
-            }
-
-            String relativePath = documentId.substring("primary:".length());
-            File root = android.os.Environment.getExternalStorageDirectory();
-            File dataWin = new File(root, relativePath);
-
-            android.util.Log.i(
-                    "RPGLoader",
-                    "Resolved data.win: " + dataWin.getAbsolutePath()
-            );
-
-            if (!dataWin.isFile() || dataWin.length() == 0) {
-                android.util.Log.e(
-                        "RPGLoader",
-                        "data.win not found: " + dataWin
-                );
-                return null;
-            }
-
-            return dataWin;
-        } catch (Exception e) {
-            android.util.Log.e(
-                    "RPGLoader",
-                    "Cannot resolve data.win URI",
-                    e
-            );
-            return null;
-        }
-    }
-
     private File directGamePathFromTreeUri(String treeUriString) {
         if (!hasAllFilesAccess()) {
             return null;
@@ -254,86 +207,33 @@ public class MainActivity extends Activity {
     private String scanSubtreeForDataWin(Uri treeUri) {
         JSONArray results = new JSONArray();
         DocumentFile rootDir = DocumentFile.fromTreeUri(this, treeUri);
-
-        if (rootDir != null && rootDir.exists() && rootDir.isDirectory()) {
-            scanDirectGameFolders(rootDir, results, treeUri.toString());
+        if (rootDir != null && rootDir.exists()) {
+            scanRecursive(rootDir, results, treeUri.toString());
         }
-
         return results.toString();
     }
 
-    /*
-     * Chi quet:
-     * 1. data.win nam truc tiep trong thu muc dang chon
-     * 2. data.win nam truc tiep trong cac thu muc con
-     *
-     * Khong quet cac thu muc chau/chau-chau.
-     */
-    private void scanDirectGameFolders(
-            DocumentFile rootDir,
-            JSONArray results,
-            String treeUriString
-    ) {
-        scanFilesInOneFolder(rootDir, results, treeUriString);
-
-        DocumentFile[] children = rootDir.listFiles();
-
-        for (DocumentFile child : children) {
-            if (child != null && child.isDirectory()) {
-                scanFilesInOneFolder(child, results, treeUriString);
-            }
-        }
-    }
-
-    private void scanFilesInOneFolder(
-            DocumentFile dir,
-            JSONArray results,
-            String treeUriString
-    ) {
-        if (dir == null || !dir.isDirectory()) {
-            return;
-        }
-
+    private void scanRecursive(DocumentFile dir, JSONArray results, String treeUriString) {
+        if (dir == null || !dir.isDirectory()) return;
         DocumentFile[] files = dir.listFiles();
-
         for (DocumentFile file : files) {
-            if (file == null || !file.isFile()) {
-                continue;
-            }
-
-            String name = file.getName();
-
-            if (name == null || !name.equalsIgnoreCase("data.win")) {
-                continue;
-            }
-
-            try {
-                JSONObject gameObj = new JSONObject();
-                gameObj.put("uri", file.getUri().toString());
-                gameObj.put("folderUri", treeUriString);
-
-                String parentName = dir.getName();
-                String gameTitle =
-                        parentName != null && !parentName.isEmpty()
-                                ? parentName
-                                : "Game";
-
-                gameObj.put("name", gameTitle);
-                gameObj.put("title", gameTitle);
-                gameObj.put("size", file.length());
-
-                results.put(gameObj);
-
-                android.util.Log.i(
-                        "RPGLoader",
-                        "Found game: " + file.getUri()
-                );
-            } catch (Exception e) {
-                android.util.Log.e(
-                        "RPGLoader",
-                        "Cannot add game result",
-                        e
-                );
+            if (file.isDirectory()) {
+                scanRecursive(file, results, treeUriString);
+            } else if (file.isFile() && file.getName() != null) {
+                if (file.getName().equalsIgnoreCase("data.win")) {
+                    try {
+                        JSONObject gameObj = new JSONObject();
+                        gameObj.put("uri", file.getUri().toString());
+                        gameObj.put("folderUri", treeUriString);
+                        gameObj.put("name", file.getName());
+                        String parentName = dir.getName();
+                        gameObj.put("title", (parentName != null && !parentName.isEmpty()) ? parentName : "Game");
+                        gameObj.put("size", file.length());
+                        results.put(gameObj);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
             }
         }
     }
@@ -350,69 +250,61 @@ public class MainActivity extends Activity {
             selectFolder();
         }
 
-        @JavascriptInterface
-        public void launchGameFromUri(String uriString, String title, String folderUri) {
-            MainActivity.this.launchGameFromUri(uriString, title, folderUri);
-        }
-
     }
 
+    @JavascriptInterface
     public void launchGameFromUri(String uriString, String title, String folderUri) {
-        try {
-            Uri contentUri = Uri.parse(uriString);
-
-            android.util.Log.i(
-                    "RPGLoader",
-                    "Launch uri=" + uriString + " folderUri=" + folderUri
-            );
-
-            if (!hasAllFilesAccess()) {
-                android.widget.Toast.makeText(
-                        MainActivity.this,
-                        "Hãy bật quyền truy cập tất cả tệp rồi bấm Play lại",
-                        android.widget.Toast.LENGTH_LONG
-                ).show();
-                requestAllFilesAccess();
-                return;
-            }
-
-            File localDataWin = directDataWinFromUri(uriString);
-
-            if (localDataWin == null || !localDataWin.isFile()) {
-                android.widget.Toast.makeText(
-                        MainActivity.this,
-                        "Không tìm thấy data.win ở đường dẫn trực tiếp.",
-                        android.widget.Toast.LENGTH_LONG
-                ).show();
-                return;
-            }
-
-            File gameRoot = localDataWin.getParentFile();
-            File saveDir = new File(gameRoot, "saves");
-
-            if (!saveDir.exists() && !saveDir.mkdirs()) {
-                throw new Exception("Không tạo được thư mục save: " + saveDir);
-            }
-
-            Intent intent = new Intent(MainActivity.this, GameActivity.class);
-            intent.putExtra("EXTRA_DATA_WIN_PATH", localDataWin.getAbsolutePath());
-            intent.putExtra("EXTRA_SAVES_PATH", saveDir.getAbsolutePath());
-            intent.putExtra(
-                    "EXTRA_GAME_TITLE",
-                    title != null ? title : "Game"
-            );
-            MainActivity.this.startActivity(intent);
-        } catch (Exception e) {
-            android.util.Log.e("RPGLoader", "Launch failed", e);
-            runOnUiThread(() ->
+            try {
+                Uri contentUri = Uri.parse(uriString);
+                android.util.Log.i(
+                        "RPGLoader",
+                        "Launch uri=" + uriString + " folderUri=" + folderUri
+                );
+                if (!hasAllFilesAccess()) {
                     android.widget.Toast.makeText(
                             MainActivity.this,
-                            "Lỗi launch game: " + e.getMessage(),
+                            "Hãy bật quyền truy cập tất cả tệp rồi bấm Play lại",
                             android.widget.Toast.LENGTH_LONG
-                    ).show()
-            );
+                    ).show();
+                    requestAllFilesAccess();
+                    return;
+                }
+
+                File localDataWin =
+                        directGamePathFromTreeUri(folderUri);
+
+                if (localDataWin == null) {
+                    android.widget.Toast.makeText(
+                            MainActivity.this,
+                            "Không tìm thấy đường dẫn trực tiếp tới data.win",
+                            android.widget.Toast.LENGTH_LONG
+                    ).show();
+                    return;
+                }
+
+                File gameRoot = localDataWin.getParentFile();
+                File saveDir = new File(gameRoot, "saves");
+
+                if (!saveDir.exists() && !saveDir.mkdirs()) {
+                    throw new Exception(
+                            "Không tạo được thư mục save: " + saveDir
+                    );
+                }
+                if (localDataWin == null || !localDataWin.exists()) {
+                    runOnUiThread(() -> Toast.makeText(MainActivity.this, "Không tìm thấy data.win ở đường dẫn trực tiếp.", Toast.LENGTH_LONG).show());
+                    return;
+                }
+
+                Intent intent = new Intent(MainActivity.this, GameActivity.class);
+                intent.putExtra("EXTRA_DATA_WIN_PATH", localDataWin.getAbsolutePath());
+                intent.putExtra("EXTRA_SAVES_PATH", saveDir.getAbsolutePath());
+                intent.putExtra("EXTRA_GAME_TITLE", title != null ? title : "Game");
+                MainActivity.this.startActivity(intent);
+            } catch (Exception e) {
+                e.printStackTrace();
+                runOnUiThread(() -> Toast.makeText(MainActivity.this, "Lỗi launch game: " + e.getMessage(), Toast.LENGTH_LONG).show());
+            }
         }
-    }
 
         private File copyGameFolderToPrivateStorage(
                 Uri folderUri,

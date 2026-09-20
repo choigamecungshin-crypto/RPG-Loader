@@ -4,6 +4,7 @@ ADDED from /data/data/com.termux/files/home/RPG-Loader/app/src/main/AndroidManif
 INJECTED from /data/data/com.termux/files/home/RPG-Loader/app/src/main/AndroidManifest.xml:1:1-33:12
 INJECTED from /data/data/com.termux/files/home/RPG-Loader/app/src/main/AndroidManifest.xml:1:1-33:12
 INJECTED from /data/data/com.termux/files/home/RPG-Loader/app/src/main/AndroidManifest.xml:1:1-33:12
+MERGED from [androidx.documentfile:documentfile:1.0.1] /data/data/com.termux/files/home/.gradle/caches/8.14.3/transforms/6f10c74bff7e81e5a5fa7a582017142e/transformed/documentfile-1.0.1/AndroidManifest.xml:17:1-22:12
 	package
 		INJECTED from /data/data/com.termux/files/home/RPG-Loader/app/src/main/AndroidManifest.xml
 	android:versionName
@@ -65,6 +66,8 @@ uses-sdk
 INJECTED from /data/data/com.termux/files/home/RPG-Loader/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from /data/data/com.termux/files/home/RPG-Loader/app/src/main/AndroidManifest.xml
 INJECTED from /data/data/com.termux/files/home/RPG-Loader/app/src/main/AndroidManifest.xml
+MERGED from [androidx.documentfile:documentfile:1.0.1] /data/data/com.termux/files/home/.gradle/caches/8.14.3/transforms/6f10c74bff7e81e5a5fa7a582017142e/transformed/documentfile-1.0.1/AndroidManifest.xml:20:5-44
+MERGED from [androidx.documentfile:documentfile:1.0.1] /data/data/com.termux/files/home/.gradle/caches/8.14.3/transforms/6f10c74bff7e81e5a5fa7a582017142e/transformed/documentfile-1.0.1/AndroidManifest.xml:20:5-44
 	android:targetSdkVersion
 		INJECTED from /data/data/com.termux/files/home/RPG-Loader/app/src/main/AndroidManifest.xml
 	android:minSdkVersion

@@ -254,86 +254,33 @@ public class MainActivity extends Activity {
     private String scanSubtreeForDataWin(Uri treeUri) {
         JSONArray results = new JSONArray();
         DocumentFile rootDir = DocumentFile.fromTreeUri(this, treeUri);
-
-        if (rootDir != null && rootDir.exists() && rootDir.isDirectory()) {
-            scanDirectGameFolders(rootDir, results, treeUri.toString());
+        if (rootDir != null && rootDir.exists()) {
+            scanRecursive(rootDir, results, treeUri.toString());
         }
-
         return results.toString();
     }
 
-    /*
-     * Chi quet:
-     * 1. data.win nam truc tiep trong thu muc dang chon
-     * 2. data.win nam truc tiep trong cac thu muc con
-     *
-     * Khong quet cac thu muc chau/chau-chau.
-     */
-    private void scanDirectGameFolders(
-            DocumentFile rootDir,
-            JSONArray results,
-            String treeUriString
-    ) {
-        scanFilesInOneFolder(rootDir, results, treeUriString);
-
-        DocumentFile[] children = rootDir.listFiles();
-
-        for (DocumentFile child : children) {
-            if (child != null && child.isDirectory()) {
-                scanFilesInOneFolder(child, results, treeUriString);
-            }
-        }
-    }
-
-    private void scanFilesInOneFolder(
-            DocumentFile dir,
-            JSONArray results,
-            String treeUriString
-    ) {
-        if (dir == null || !dir.isDirectory()) {
-            return;
-        }
-
+    private void scanRecursive(DocumentFile dir, JSONArray results, String treeUriString) {
+        if (dir == null || !dir.isDirectory()) return;
         DocumentFile[] files = dir.listFiles();
-
         for (DocumentFile file : files) {
-            if (file == null || !file.isFile()) {
-                continue;
-            }
-
-            String name = file.getName();
-
-            if (name == null || !name.equalsIgnoreCase("data.win")) {
-                continue;
-            }
-
-            try {
-                JSONObject gameObj = new JSONObject();
-                gameObj.put("uri", file.getUri().toString());
-                gameObj.put("folderUri", treeUriString);
-
-                String parentName = dir.getName();
-                String gameTitle =
-                        parentName != null && !parentName.isEmpty()
-                                ? parentName
-                                : "Game";
-
-                gameObj.put("name", gameTitle);
-                gameObj.put("title", gameTitle);
-                gameObj.put("size", file.length());
-
-                results.put(gameObj);
-
-                android.util.Log.i(
-                        "RPGLoader",
-                        "Found game: " + file.getUri()
-                );
-            } catch (Exception e) {
-                android.util.Log.e(
-                        "RPGLoader",
-                        "Cannot add game result",
-                        e
-                );
+            if (file.isDirectory()) {
+                scanRecursive(file, results, treeUriString);
+            } else if (file.isFile() && file.getName() != null) {
+                if (file.getName().equalsIgnoreCase("data.win")) {
+                    try {
+                        JSONObject gameObj = new JSONObject();
+                        gameObj.put("uri", file.getUri().toString());
+                        gameObj.put("folderUri", treeUriString);
+                        gameObj.put("name", file.getName());
+                        String parentName = dir.getName();
+                        gameObj.put("title", (parentName != null && !parentName.isEmpty()) ? parentName : "Game");
+                        gameObj.put("size", file.length());
+                        results.put(gameObj);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
             }
         }
     }

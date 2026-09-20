@@ -36,7 +36,34 @@ public class GameActivity extends Activity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        dataWinPath = getIntent().getStringExtra("dataWinPath");
+        dataWinPath = getIntent().getStringExtra("EXTRA_DATA_WIN_PATH");
+
+        android.util.Log.i("RPGLoader",
+                "GameActivity dataWinPath=" + dataWinPath);
+
+        if (dataWinPath != null) {
+            java.io.File gameDir =
+                    new java.io.File(dataWinPath).getParentFile();
+            java.io.File videoDir = new java.io.File(gameDir, "vid");
+
+            android.util.Log.i("RPGLoader",
+                    "GameActivity gameDir=" + gameDir.getAbsolutePath());
+            android.util.Log.i("RPGLoader",
+                    "Video dir=" + videoDir.getAbsolutePath()
+                            + " exists=" + videoDir.isDirectory());
+}
+        android.util.Log.i(
+                "RPGLoader",
+                "GameActivity dataWinPath=" + dataWinPath
+        );
+        if (dataWinPath != null) {
+            android.util.Log.i(
+                    "RPGLoader",
+                    "GameActivity gameDir=" +
+                            new java.io.File(dataWinPath).getParent()
+            );
+        }
+
 
         if (dataWinPath == null) {
             finish();
@@ -86,10 +113,17 @@ public class GameActivity extends Activity
 
         Surface surface = new Surface(surfaceTexture);
 
-        java.io.File saves = new java.io.File(
-                getExternalFilesDir(null),
-                "saves/" + Integer.toHexString(dataWinPath.hashCode())
-        );
+        String savePath = getIntent().getStringExtra("EXTRA_SAVES_PATH");
+
+        java.io.File saves;
+        if (savePath != null && !savePath.isEmpty()) {
+            saves = new java.io.File(savePath);
+        } else {
+            saves = new java.io.File(
+                    new java.io.File(dataWinPath).getParentFile(),
+                    "saves"
+            );
+        }
 
         if (!saves.exists()) {
             saves.mkdirs();
