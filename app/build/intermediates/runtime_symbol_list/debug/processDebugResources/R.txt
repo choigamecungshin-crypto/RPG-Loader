@@ -1,0 +1,2 @@
+int style AppTheme 0x7f010000
+int style GameTheme 0x7f010001

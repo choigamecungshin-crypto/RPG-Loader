@@ -1,0 +1,2 @@
+com.rpgloader:style/GameTheme = 0x7f010001
+com.rpgloader:style/AppTheme = 0x7f010000

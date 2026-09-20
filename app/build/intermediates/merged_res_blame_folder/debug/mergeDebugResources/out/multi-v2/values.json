@@ -1,0 +1,28 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.rpgloader.app-mergeDebugResources-2:/values/values.xml",
+            "map": [
+                {
+                    "source": "/data/data/com.termux/files/home/RPG-Loader/app/src/main/res/values/styles.xml",
+                    "from": {
+                        "startLines": "3,12",
+                        "startColumns": "4,4",
+                        "startOffsets": "56,449",
+                        "endLines": "10,21",
+                        "endColumns": "12,12",
+                        "endOffsets": "443,997"
+                    },
+                    "to": {
+                        "startLines": "2,9",
+                        "startColumns": "4,4",
+                        "startOffsets": "55,439",
+                        "endLines": "8,17",
+                        "endColumns": "12,12",
+                        "endOffsets": "434,979"
+                    }
+                }
+            ]
+        }
+    ]
+}
