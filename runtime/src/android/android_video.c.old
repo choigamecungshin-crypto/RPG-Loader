@@ -1,0 +1,117 @@
+#include "android_video.h"
+#include <android/log.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define LOG_TAG "ButterscotchVideo"
+
+struct AndroidVideo {
+    char* path;
+    int status;
+    int64_t position;
+    int64_t duration;
+    bool loop;
+    float volume;
+};
+
+AndroidVideo* AndroidVideo_open(const char* path) {
+    AndroidVideo* v = calloc(1, sizeof(AndroidVideo));
+    if (!v) return NULL;
+
+    v->path = strdup(path);
+    v->status = 1;
+    v->position = 0;
+    v->duration = 0;
+
+    __android_log_print(
+        ANDROID_LOG_INFO,
+        LOG_TAG,
+        "video_open: %s",
+        path
+    );
+
+    /*
+     * Initial backend skeleton.
+     *
+     * The VM/render integration is added separately so this file
+     * remains safe to compile while the Android decoder is wired in.
+     */
+    return v;
+}
+
+void AndroidVideo_close(AndroidVideo* video) {
+    if (!video) return;
+
+    __android_log_print(
+        ANDROID_LOG_INFO,
+        LOG_TAG,
+        "video_close: %s",
+        video->path ? video->path : "(null)"
+    );
+
+    free(video->path);
+    free(video);
+}
+
+void AndroidVideo_update(AndroidVideo* video) {
+    if (!video || video->status != 1)
+        return;
+}
+
+void AndroidVideo_draw(AndroidVideo* video) {
+    if (!video || video->status != 1)
+        return;
+}
+
+int AndroidVideo_getStatus(AndroidVideo* video) {
+    if (!video)
+        return 0;
+
+    return video->status;
+}
+
+int64_t AndroidVideo_getPosition(AndroidVideo* video) {
+    if (!video)
+        return 0;
+
+    return video->position;
+}
+
+int64_t AndroidVideo_getDuration(AndroidVideo* video) {
+    if (!video)
+        return 0;
+
+    return video->duration;
+}
+
+void AndroidVideo_pause(AndroidVideo* video) {
+    if (!video) return;
+    video->status = 2;
+}
+
+void AndroidVideo_resume(AndroidVideo* video) {
+    if (!video) return;
+    video->status = 1;
+}
+
+int AndroidVideo_getFormat(AndroidVideo* video) {
+    (void)video;
+
+    /*
+     * 0 = normal RGBA video surface.
+     *
+     * This deliberately starts with format 0 so the existing
+     * draw_surface path in Deltarune is used.
+     */
+    return 0;
+}
+
+void AndroidVideo_setLoop(AndroidVideo* video, bool loop) {
+    if (!video) return;
+    video->loop = loop;
+}
+
+void AndroidVideo_setVolume(AndroidVideo* video, float volume) {
+    if (!video) return;
+    video->volume = volume;
+}
